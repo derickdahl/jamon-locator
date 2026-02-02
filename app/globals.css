@@ -1,0 +1,57 @@
+@import "tailwindcss";
+
+:root {
+  --background: #fffbeb;
+  --foreground: #78350f;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* Leaflet overrides */
+.leaflet-container {
+  height: 100%;
+  width: 100%;
+  font-family: inherit;
+}
+
+.leaflet-popup-content-wrapper {
+  border-radius: 12px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+}
+
+.leaflet-popup-content {
+  margin: 12px 16px;
+}
+
+.jamon-marker,
+.user-marker {
+  background: transparent !important;
+  border: none !important;
+}
+
+/* Custom scrollbar for bottom sheet */
+::-webkit-scrollbar {
+  width: 4px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f5f5f4;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #d6d3d1;
+  border-radius: 4px;
+}
+
+/* Mobile-first adjustments */
+@media (max-width: 640px) {
+  .leaflet-popup-content-wrapper {
+    max-width: 260px;
+  }
+}
