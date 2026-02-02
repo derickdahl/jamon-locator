@@ -21,22 +21,21 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
+    // Start with default location immediately, then try to get actual location
+    setLocation({ lat: 33.5017, lng: -117.6625 })
+    
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (pos) => {
           setLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude })
+          setError(null)
         },
         (err) => {
           console.error('Geolocation error:', err)
-          // Default to San Juan Capistrano area if geolocation fails
-          setLocation({ lat: 33.5017, lng: -117.6625 })
-          setError('Using default location. Enable location for better results.')
+          setError('Using SoCal default. Enable location for better results.')
         },
-        { enableHighAccuracy: true, timeout: 10000 }
+        { enableHighAccuracy: true, timeout: 5000 }
       )
-    } else {
-      setLocation({ lat: 33.5017, lng: -117.6625 })
-      setError('Geolocation not supported')
     }
   }, [])
 
