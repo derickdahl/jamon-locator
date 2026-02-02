@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import dynamic from 'next/dynamic'
 
 interface JamonSpot {
   id: string
@@ -15,136 +14,101 @@ interface JamonSpot {
   distance?: number
 }
 
-// Must dynamically import anything using Leaflet (no SSR)
-const MapView = dynamic(() => import('@/components/MapView'), { 
-  ssr: false,
-  loading: () => <LoadingScreen message="Loading map..." />
-})
-
-function LoadingScreen({ message }: { message: string }) {
-  return (
-    <div className="h-screen w-full flex items-center justify-center bg-amber-50">
-      <div className="text-center">
-        <div className="text-6xl mb-4">🍖</div>
-        <p className="text-amber-800 text-xl">{message}</p>
-      </div>
-    </div>
-  )
-}
-
 export default function Home() {
   const [spots, setSpots] = useState<JamonSpot[]>([])
-  const [center, setCenter] = useState({ lat: 33.5017, lng: -117.6625 })
-  const [status, setStatus] = useState('Loading...')
-  const [ready, setReady] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
-  // Fetch spots on mount
   useEffect(() => {
-    async function init() {
-      // Try to get user location
-      if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-          (pos) => setCenter({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
-          () => console.log('Using default location')
-        )
-      }
-
-      // Fetch spots
-      setStatus('Finding jamón spots...')
-      try {
-        const res = await fetch(`/api/jamon?lat=${center.lat}&lng=${center.lng}&radius=100`)
-        const data = await res.json()
-        console.log('API response:', data)
-        
-        if (data.spots && data.spots.length > 0) {
-          setSpots(data.spots)
-          setStatus(`Found ${data.spots.length} spots!`)
-        } else {
-          setStatus('No spots found')
-        }
-      } catch (err) {
-        console.error('Fetch error:', err)
-        setStatus('Error loading spots')
-      }
-      
-      setReady(true)
-    }
-    init()
+    fetch('/api/jamon?lat=33.5017&lng=-117.6625&radius=100')
+      .then(res => res.json())
+      .then(data => {
+        console.log('Data:', data)
+        setSpots(data.spots || [])
+        setLoading(false)
+      })
+      .catch(err => {
+        console.error('Error:', err)
+        setError(err.message)
+        setLoading(false)
+      })
   }, [])
 
-  // Re-fetch when center changes
-  useEffect(() => {
-    if (!ready) return
-    
-    async function refetch() {
-      try {
-        const res = await fetch(`/api/jamon?lat=${center.lat}&lng=${center.lng}&radius=100`)
-        const data = await res.json()
-        if (data.spots) {
-          setSpots(data.spots)
-          setStatus(`Found ${data.spots.length} spots!`)
-        }
-      } catch (err) {
-        console.error('Refetch error:', err)
-      }
-    }
-    refetch()
-  }, [center, ready])
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-amber-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-6xl mb-4">🍖</div>
+          <p className="text-amber-800 text-xl">Finding jamón...</p>
+        </div>
+      </div>
+    )
+  }
 
-  if (!ready) {
-    return <LoadingScreen message={status} />
+  if (error) {
+    return (
+      <div className="min-h-screen bg-amber-50 flex items-center justify-center p-4">
+        <div className="text-center">
+          <div className="text-6xl mb-4">😢</div>
+          <p className="text-red-600">Error: {error}</p>
+        </div>
+      </div>
+    )
   }
 
   return (
-    <main className="h-screen w-full relative">
+    <div className="min-h-screen bg-amber-50">
       {/* Header */}
-      <div className="absolute top-0 left-0 right-0 z-[1000] bg-gradient-to-b from-amber-900 to-transparent p-4 pb-16">
-        <h1 className="text-2xl font-bold text-white">🍖 Jamón Locator</h1>
-        <p className="text-amber-100 text-sm">{status}</p>
-      </div>
+      <header className="bg-amber-800 text-white p-4 sticky top-0 z-10">
+        <h1 className="text-2xl font-bold">🍖 Jamón Locator</h1>
+        <p className="text-amber-200 text-sm">{spots.length} spots found near San Juan Capistrano</p>
+      </header>
 
-      {/* Map */}
-      <MapView center={center} spots={spots} />
-
-      {/* Spot list */}
-      {spots.length > 0 && (
-        <div className="absolute bottom-0 left-0 right-0 z-[1000] bg-white rounded-t-2xl shadow-2xl max-h-[35vh] overflow-y-auto">
-          <div className="p-3 border-b sticky top-0 bg-white">
-            <div className="w-12 h-1 bg-gray-300 rounded mx-auto mb-2"></div>
-            <span className="font-semibold text-amber-800">{spots.length} Jamón Spots</span>
-          </div>
-          {spots.map((spot) => (
-            <a
-              key={spot.id}
-              href={`https://www.google.com/maps/dir/?api=1&destination=${spot.lat},${spot.lng}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="block p-3 border-b hover:bg-amber-50"
-            >
-              <div className="flex justify-between items-start">
-                <div>
-                  <h3 className="font-semibold text-gray-900">{spot.name}</h3>
-                  <p className="text-sm text-gray-600">{spot.address}</p>
-                  <div className="flex gap-1 mt-1">
-                    {spot.jamonTypes.slice(0, 2).map((t) => (
-                      <span key={t} className="text-xs bg-amber-100 text-amber-800 px-2 py-0.5 rounded">
-                        {t}
-                      </span>
-                    ))}
+      {/* Spots List */}
+      <main className="p-4">
+        {spots.length === 0 ? (
+          <p className="text-center text-gray-500 py-8">No spots found</p>
+        ) : (
+          <div className="space-y-3">
+            {spots.map((spot) => (
+              <a
+                key={spot.id}
+                href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(spot.name + ' ' + spot.address)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block bg-white rounded-xl p-4 shadow-md border border-amber-200 hover:shadow-lg transition"
+              >
+                <div className="flex justify-between items-start gap-3">
+                  <div className="flex-1">
+                    <h2 className="font-bold text-lg text-amber-900">{spot.name}</h2>
+                    <p className="text-gray-600 text-sm">{spot.address}</p>
+                    <div className="flex flex-wrap gap-1 mt-2">
+                      {spot.jamonTypes.map((t) => (
+                        <span 
+                          key={t} 
+                          className="text-xs bg-amber-100 text-amber-800 px-2 py-1 rounded-full"
+                        >
+                          {t}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="text-right flex-shrink-0">
+                    <div className="text-2xl font-bold text-amber-600">{spot.jamonScore}/5</div>
+                    <div className="text-sm text-gray-500">{spot.priceRange}</div>
+                    {spot.distance !== undefined && (
+                      <div className="text-xs text-gray-400 mt-1">{spot.distance.toFixed(1)} mi</div>
+                    )}
                   </div>
                 </div>
-                <div className="text-right">
-                  <div className="text-amber-600 font-bold">{spot.jamonScore}/5</div>
-                  <div className="text-xs text-gray-500">{spot.priceRange}</div>
-                  {spot.distance && (
-                    <div className="text-xs text-gray-400">{spot.distance.toFixed(1)} mi</div>
-                  )}
+                <div className="mt-3 text-center bg-amber-600 text-white py-2 rounded-lg font-semibold">
+                  Open in Maps 📍
                 </div>
-              </div>
-            </a>
-          ))}
-        </div>
-      )}
-    </main>
+              </a>
+            ))}
+          </div>
+        )}
+      </main>
+    </div>
   )
 }

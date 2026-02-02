@@ -1,16 +1,9 @@
 import type { Metadata, Viewport } from "next";
-import "leaflet/dist/leaflet.css";
 import "./globals.css";
 
 export const metadata: Metadata = {
   title: "🍖 Jamón Locator",
   description: "Find the finest jamón near you",
-  manifest: "/manifest.json",
-  appleWebApp: {
-    capable: true,
-    statusBarStyle: "black-translucent",
-    title: "Jamón Locator",
-  },
 };
 
 export const viewport: Viewport = {
@@ -28,9 +21,6 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <head>
-        <link rel="apple-touch-icon" href="/icon-192.png" />
-      </head>
       <body className="antialiased">{children}</body>
     </html>
   );
